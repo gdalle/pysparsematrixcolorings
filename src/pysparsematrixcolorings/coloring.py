@@ -1,6 +1,11 @@
-from . import _jl
+import juliacall
 import numpy as np
 import scipy.sparse as sp
+
+_jl = juliacall.newmodule("SMCJuliaCall")
+_jl.seval("using SparseArrays")
+_jl.seval("using SparseMatrixColorings")
+_jl.seval("using PythonCall")
 
 
 def _ColoringProblem(structure: str, partition: str):
@@ -22,29 +27,90 @@ def _GreedyColoringAlgorithm(order: str):
     )
 
 
-def coloring(
+def _SparseMatrixCSC(A):
+    S = sp.csc_matrix(A)
+    m, n = S.get_shape()
+    colptr_jl = _jl.pyconvert(_jl.Vector, S.indptr + 1)
+    rowval_jl = _jl.pyconvert(_jl.Vector, S.indices + 1)
+    nzval_jl = _jl.ones(_jl.Bool, S.nnz)
+    S_jl = _jl.SparseMatrixCSC(
+        m,
+        n,
+        colptr_jl,
+        rowval_jl,
+        nzval_jl,
+    )
+    return S, S_jl
+
+
+def compute_coloring(
     sparsity_pattern,
     structure: str = "nonsymmetric",
     partition: str = "column",
     order: str = "natural",
+    return_aux: bool = False,
 ):
-    """Perform the coloring of a given sparsity pattern.
+    """Compute the coloring of a given sparsity pattern and prepare for sparse differentiation.
 
     Args:
         sparsity_pattern (matrix-like): The sparsity pattern to color, expressed as a sparse or dense matrix. Its values do not matter, only the locations of its nonzero entries.
         structure (str, optional): Either "nonsymmetric" or "symmetric". Defaults to "nonsymmetric".
         partition (str, optional): Either "column" or "row". Defaults to "column".
         order (str, optional): Either "natural" or "largestfirst". Defaults to "natural".
+        return_aux (bool, optional): Whether to return additional data used during sparse differentiation. Defaults to False.
+
+    Raises:
+        ValueError: If the options provided are not correct.
 
     Returns:
-        np.array: A vector of colors starting at zero, one for each column or row of the sparsity pattern.
+        If `return_aux=False`, a single vector `colors` such that each column or row of the sparsity pattern gets an integer color (depending on the partition).
+        If `return_aux=True`, a tuple `(colors, basis_matrix, (compressed_row_inds, compressed_col_inds))` where `basis_matrix` gives the basis vectors used during compression and `(compressed_row_inds, compressed_col_inds)` is a tuple of sparse matrices telling at which row and column of the compressed matrix each coefficient should be retrieved.
     """
-    S = sp.coo_matrix(sparsity_pattern)
-    row_inds = S.coords[0] + 1
-    col_inds = S.coords[1] + 1
-    S_jl = _jl.sparse(row_inds, col_inds, _jl.ones(_jl.Bool, S.nnz))
+    M, N = sparsity_pattern.shape
+    S, S_jl = _SparseMatrixCSC(sparsity_pattern)
     problem_jl = _ColoringProblem(structure, partition)
     algorithm_jl = _GreedyColoringAlgorithm(order)
-    colors_jl = _jl.fast_coloring(S_jl, problem_jl, algorithm_jl)
-    colors = np.array(colors_jl, dtype=np.int32) - 1
-    return colors
+    result_jl = _jl.coloring(S_jl, problem_jl, algorithm_jl)
+
+    match partition:
+        case "column":
+            colors = np.array(_jl.column_colors(result_jl)) - 1
+        case "row":
+            colors = np.array(_jl.row_colors(result_jl)) - 1
+        case _:
+            raise ValueError("The provided partition is invalid")
+
+    if not return_aux:
+        return colors
+    else:
+        compressed_indices = np.array(result_jl.compressed_indices) - 1
+        C = np.max(colors)
+        match partition:
+            case "column":
+                basis_matrix = np.column_stack([colors == c for c in range(C + 1)])
+                compressed_row_inds = sp.csc_matrix(
+                    (compressed_indices % M, S.indices, S.indptr), shape=(M, N)
+                )
+                compressed_col_inds = sp.csc_matrix(
+                    (compressed_indices // M, S.indices, S.indptr), shape=(M, N)
+                )
+            case "row":
+                basis_matrix = np.vstack([colors == c for c in range(C + 1)])
+                compressed_row_inds = sp.csc_matrix(
+                    (compressed_indices % (C + 1), S.indices, S.indptr), shape=(M, N)
+                )
+                compressed_col_inds = sp.csc_matrix(
+                    (compressed_indices // (C + 1), S.indices, S.indptr), shape=(M, N)
+                )
+
+        return colors, basis_matrix, (compressed_row_inds, compressed_col_inds)
+
+
+def decompress(compressed_matrix, compressed_row_inds, compressed_col_inds):
+    linear_row_inds = compressed_row_inds.data
+    linear_col_inds = compressed_col_inds.data
+    data = compressed_matrix[linear_row_inds, linear_col_inds]
+    return sp.csc_matrix(
+        (data, compressed_row_inds.indices, compressed_row_inds.indptr),
+        shape=compressed_row_inds.shape,
+    )

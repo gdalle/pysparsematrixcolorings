@@ -2,8 +2,5 @@ r"""
 A Python interface to the Julia package [SparseMatrixColorings.jl](https://github.com/gdalle/SparseMatrixColorings.jl).
 """
 
-import juliacall
-
-_jl = juliacall.newmodule("SMCJuliaCall")
-_jl.seval("using SparseArrays")
-_jl.seval("using SparseMatrixColorings")
+from .coloring import compute_coloring as compute_coloring
+from .coloring import decompress as decompress

@@ -4,12 +4,58 @@ import scipy.sparse as sp
 
 
 def test_identity():
-    sparsity_pattern = sp.eye(10, dtype=bool)
-    colors = smc.coloring(sparsity_pattern)
+    S = sp.eye(10, dtype=bool)
+    colors = smc.compute_coloring(S)
     assert np.all(colors == 0)
 
 
 def test_attila():
-    sparsity_pattern = np.ones((10, 10), dtype=bool)
-    colors = smc.coloring(sparsity_pattern)
+    S = np.ones((10, 10), dtype=bool)
+    colors = smc.compute_coloring(S)
     assert np.all(colors == np.arange(10))
+
+
+def test_column_compression():
+    A = np.array(
+        [
+            [0, 2, 3, 0],
+            [0, 0, 0, 4],
+            [1, 5, 0, 0],
+            [0, 6, 7, 0],
+        ]
+    )
+    colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
+        A, partition="column", return_aux=True
+    )
+    B = np.dot(A, basis_matrix)
+    A2 = smc.decompress(B, row_inds, col_inds)
+    assert not np.any(A != A2)
+
+
+def test_row_compression():
+    A = np.array(
+        [
+            [0, 2, 3, 0],
+            [0, 0, 0, 4],
+            [1, 5, 0, 0],
+            [0, 6, 7, 0],
+        ]
+    )
+    colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
+        A, partition="row", return_aux=True
+    )
+    B = np.dot(basis_matrix, A)
+    A2 = smc.decompress(B, row_inds, col_inds)
+    assert not np.any(A != A2)
+
+
+def test_symmetric_compression():
+    A = sp.csc_matrix(sp.diags(np.arange(10)))
+    A[:, 0] = np.arange(10, 20)
+    A[0, :] = np.arange(10, 20)
+    colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
+        A, structure="symmetric", return_aux=True
+    )
+    B = A @ basis_matrix
+    A2 = smc.decompress(B, row_inds, col_inds)
+    assert not np.any(A.todense() != A2)
