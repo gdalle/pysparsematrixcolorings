@@ -2,5 +2,7 @@ r"""
 A Python interface to the Julia package [SparseMatrixColorings.jl](https://github.com/gdalle/SparseMatrixColorings.jl).
 """
 
-from .coloring import compute_coloring as compute_coloring
-from .coloring import decompress as decompress
+from .coloring import compute_coloring
+from .compression import compress, decompress
+
+__all__ = ["compute_coloring", "compress", "decompress"]

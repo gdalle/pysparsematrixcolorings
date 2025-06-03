@@ -1,4 +1,4 @@
-import pysparsematrixcolorings.coloring as smc
+import pysparsematrixcolorings as smc
 import numpy as np
 import scipy.sparse as sp
 
@@ -27,7 +27,7 @@ def test_column_compression():
     colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
         A, partition="column", return_aux=True
     )
-    B = np.dot(A, basis_matrix)
+    B = smc.compress(A, basis_matrix, partition="column")
     A2 = smc.decompress(B, row_inds, col_inds)
     assert not np.any(A != A2)
 
@@ -44,7 +44,7 @@ def test_row_compression():
     colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
         A, partition="row", return_aux=True
     )
-    B = np.dot(basis_matrix, A)
+    B = smc.compress(A, basis_matrix, partition="row")
     A2 = smc.decompress(B, row_inds, col_inds)
     assert not np.any(A != A2)
 
@@ -56,6 +56,6 @@ def test_symmetric_compression():
     colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
         A, structure="symmetric", return_aux=True
     )
-    B = A @ basis_matrix
+    B = smc.compress(A, basis_matrix, partition="column")
     A2 = smc.decompress(B, row_inds, col_inds)
     assert not np.any(A.todense() != A2)

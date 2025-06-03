@@ -53,18 +53,18 @@ def compute_coloring(
     """Compute the coloring of a given sparsity pattern and prepare for sparse differentiation.
 
     Args:
-        sparsity_pattern (matrix-like): The sparsity pattern to color, expressed as a sparse or dense matrix. Its values do not matter, only the locations of its nonzero entries.
-        structure (str, optional): Either "nonsymmetric" or "symmetric". Defaults to "nonsymmetric".
-        partition (str, optional): Either "column" or "row". Defaults to "column".
-        order (str, optional): Either "natural" or "largestfirst". Defaults to "natural".
-        return_aux (bool, optional): Whether to return additional data used during sparse differentiation. Defaults to False.
+        `sparsity_pattern` (matrix-like): The sparsity pattern to color, expressed as a sparse or dense matrix. Its values do not matter, only the locations of its nonzero entries.
+        `structure` (`str`, optional): Either `"nonsymmetric`" or `"symmetric"`. Defaults to `"nonsymmetric"`.
+        `partition` (`str`, optional): Either `"column`" or `"row"`. Defaults to `"column"`.
+        `order` (`str`, optional): Either `"natural`" or `"largestfirst"`. Defaults to `"natural"`.
+        `return_aux` (`bool`, optional): Whether to return additional data used during sparse differentiation. Defaults to `False`.
 
     Raises:
         ValueError: If the options provided are not correct.
 
     Returns:
-        If `return_aux=False`, a single vector `colors` such that each column or row of the sparsity pattern gets an integer color (depending on the partition).
-        If `return_aux=True`, a tuple `(colors, basis_matrix, (compressed_row_inds, compressed_col_inds))` where `basis_matrix` gives the basis vectors used during compression and `(compressed_row_inds, compressed_col_inds)` is a tuple of sparse matrices telling at which row and column of the compressed matrix each coefficient should be retrieved.
+    - If `return_aux=False`, a single vector `colors` such that each column or row of the sparsity pattern gets an integer color (depending on the partition).
+    - If `return_aux=True`, a tuple `(colors, basis_matrix, (row_inds, col_inds))` where `basis_matrix` gives the column- or row-basis vectors used during compression while `(row_inds, col_inds)` is a tuple of `scipy.sparse.csc_matrix` matrices telling at which row and column of the compressed matrix each coefficient should be retrieved. These objects can be used within `pysparsematrixcolorings.compress` and `pysparsematrixcolorings.decompress`.
     """
     M, N = sparsity_pattern.shape
     S, S_jl = _SparseMatrixCSC(sparsity_pattern)
@@ -104,13 +104,3 @@ def compute_coloring(
                 )
 
         return colors, basis_matrix, (compressed_row_inds, compressed_col_inds)
-
-
-def decompress(compressed_matrix, compressed_row_inds, compressed_col_inds):
-    linear_row_inds = compressed_row_inds.data
-    linear_col_inds = compressed_col_inds.data
-    data = compressed_matrix[linear_row_inds, linear_col_inds]
-    return sp.csc_matrix(
-        (data, compressed_row_inds.indices, compressed_row_inds.indptr),
-        shape=compressed_row_inds.shape,
-    )
