@@ -1,24 +1,24 @@
-from . import jl
+from . import _jl
 import numpy as np
 import scipy.sparse as sp
 
 
 def _ColoringProblem(structure: str, partition: str):
-    return jl.ColoringProblem(
-        structure=jl.Symbol(structure), partition=jl.Symbol(partition)
+    return _jl.ColoringProblem(
+        structure=_jl.Symbol(structure), partition=_jl.Symbol(partition)
     )
 
 
 def _GreedyColoringAlgorithm(order: str):
     match order:
         case "natural":
-            jl_order = jl.NaturalOrder()
+            jl_order = _jl.NaturalOrder()
         case "largestfirst":
-            jl_order = jl.LargestFirst()
+            jl_order = _jl.LargestFirst()
         case _:
             raise ValueError("The provided order is invalid")
-    return jl.GreedyColoringAlgorithm(
-        jl_order, decompression=jl.Symbol("direct"), postprocessing=False
+    return _jl.GreedyColoringAlgorithm(
+        jl_order, decompression=_jl.Symbol("direct"), postprocessing=False
     )
 
 
@@ -42,9 +42,9 @@ def coloring(
     S = sp.coo_matrix(sparsity_pattern)
     row_inds = S.coords[0] + 1
     col_inds = S.coords[1] + 1
-    S_jl = jl.sparse(row_inds, col_inds, jl.ones(jl.Bool, S.nnz))
+    S_jl = _jl.sparse(row_inds, col_inds, _jl.ones(_jl.Bool, S.nnz))
     problem_jl = _ColoringProblem(structure, partition)
     algorithm_jl = _GreedyColoringAlgorithm(order)
-    colors_jl = jl.fast_coloring(S_jl, problem_jl, algorithm_jl)
+    colors_jl = _jl.fast_coloring(S_jl, problem_jl, algorithm_jl)
     colors = np.array(colors_jl, dtype=np.int32) - 1
     return colors
