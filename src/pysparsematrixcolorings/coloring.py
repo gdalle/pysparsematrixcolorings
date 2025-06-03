@@ -3,7 +3,7 @@ import numpy as np
 import scipy.sparse as sp
 
 
-def  _ColoringProblem(structure: str, partition: str):
+def _ColoringProblem(structure: str, partition: str):
     return jl.ColoringProblem(
         structure=jl.Symbol(structure), partition=jl.Symbol(partition)
     )

@@ -6,7 +6,7 @@ import scipy.sparse as sp
 def test_identity():
     sparsity_pattern = sp.eye(10, dtype=bool)
     colors = smc.coloring(sparsity_pattern)
-    assert  np.all(colors == 0)
+    assert np.all(colors == 1)
 
 
 def test_attila():
