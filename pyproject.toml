@@ -1,7 +1,7 @@
 [project]
 name = "pysparsematrixcolorings"
 version = "0.1.0"
-description = "Add your description here"
+description = "Python interface to the Julia package SparseMatrixColorings.jl"
 readme = "README.md"
 authors = [
     { name = "Guillaume Dalle", email = "22795598+gdalle@users.noreply.github.com" }
