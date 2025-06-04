@@ -14,3 +14,4 @@ uv.lock
 .*_cache
 
 tests/playground.py
+.coverage
