@@ -11,6 +11,7 @@ dependencies = [
     "juliacall>=0.9.25",
     "numpy>=2.2.6",
     "scipy>=1.15.3",
+    "scipy-stubs>=1.15.3.0",
 ]
 
 [build-system]
@@ -19,10 +20,12 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "ipykernel>=6.29.5",
     "pdoc>=15.0.3",
-    "pip>=25.1.1",
     "pytest>=8.4.0",
     "pytest-cov>=6.1.1",
     "ruff>=0.11.12",
+]
+vscode = [
+    "ipykernel>=6.29.5",
+    "pip>=25.1.1",
 ]
