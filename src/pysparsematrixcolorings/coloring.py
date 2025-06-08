@@ -89,10 +89,7 @@ def compute_coloring(
         order_seed: For the random order, an optional RNG seed to guarantee reproducible execution.
 
     Returns:
-        A tuple `(colors, basis_matrix, (row_inds, col_inds))` where
-            - `colors` is a vector of integer colors, numbered from 1.
-            - `basis_matrix` gives the column- or row-basis vectors used during compression.
-            - `(row_inds, col_inds)` is a tuple of sparse matrices telling at which row and column of the compressed matrix each coefficient should be retrieved.
+        A tuple `(colors, basis_matrix, (row_inds, col_inds))` where `colors` is a vector of integer colors, numbered from 1, `basis_matrix` gives the column- or row-basis vectors used during compression, and `(row_inds, col_inds)` is a tuple of sparse matrices telling at which row and column of the compressed matrix each coefficient should be retrieved.
 
         These objects can be used within `pysparsematrixcolorings.compress` and `pysparsematrixcolorings.decompress`.
     """

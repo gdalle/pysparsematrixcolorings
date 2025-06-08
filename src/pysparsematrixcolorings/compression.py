@@ -21,13 +21,10 @@ def compress(
     Returns:
         ArrayLike: Either `matrix @ basis_matrix` (for a column partition) or `basis_matrix @ matrix` (for a row partition)
     """
-    match partition:
-        case Partition.COLUMN:
-            return matrix @ basis_matrix
-        case Partition.ROW:
-            return basis_matrix @ matrix
-        case _:  # to appease ty
-            raise ValueError("Partition not valid")
+    if partition == Partition.COLUMN:
+        return matrix @ basis_matrix
+    else:
+        return basis_matrix @ matrix
 
 
 def decompress(

@@ -15,6 +15,8 @@ def test_identity():
     ]:
         (colors, _, _) = smc.compute_coloring(S, order=order)
         assert np.all(colors == 0)
+    (colors, _, _) = smc.compute_coloring(S, order=smc.Order("random"), order_seed=2)
+    assert np.all(colors == 0)
 
 
 def test_attila():
@@ -24,50 +26,50 @@ def test_attila():
 
 
 def test_column_compression():
-    A = np.array(
-        [
-            [0, 2, 3, 0],
-            [0, 0, 0, 4],
-            [1, 5, 0, 0],
-            [0, 6, 7, 0],
-        ]
-    )
+    As = [
+        sp.random(m, n, density)
+        for (m, n) in [(100, 200), (200, 100)]
+        for density in np.arange(0.02, 0.1, 0.02)
+    ]
     partition = smc.Partition("column")
-    colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
-        A, partition=partition
-    )
-    B = smc.compress(A, basis_matrix, partition=partition)
-    A2 = smc.decompress(B, row_inds, col_inds)
-    assert not np.any(A != A2)
+    for A in As:
+        colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
+            A, partition=partition
+        )
+        B = smc.compress(A, basis_matrix, partition=partition)
+        A2 = smc.decompress(B, row_inds, col_inds)
+        assert not np.any(A.todense() != A2)
 
 
 def test_row_compression():
-    A = np.array(
-        [
-            [0, 2, 3, 0],
-            [0, 0, 0, 4],
-            [1, 5, 0, 0],
-            [0, 6, 7, 0],
-        ]
-    )
+    As = [
+        sp.random(m, n, density)
+        for (m, n) in [(100, 200), (200, 100)]
+        for density in np.arange(0.02, 0.1, 0.02)
+    ]
     partition = smc.Partition("row")
-    colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
-        A, partition=partition
-    )
-    B = smc.compress(A, basis_matrix, partition=partition)
-    A2 = smc.decompress(B, row_inds, col_inds)
-    assert not np.any(A != A2)
+    for A in As:
+        colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
+            A, partition=partition
+        )
+        B = smc.compress(A, basis_matrix, partition=partition)
+        A2 = smc.decompress(B, row_inds, col_inds)
+        assert not np.any(A.todense() != A2)
 
 
 def test_symmetric_compression():
-    A = sp.csc_matrix(sp.diags(np.arange(10)))
-    A[:, 0] = np.arange(10, 20)
-    A[0, :] = np.arange(10, 20)
+    As = [
+        sp.random(m, n, density)
+        for (m, n) in [(200, 200)]
+        for density in np.arange(0.02, 0.1, 0.02)
+    ]
     structure = smc.Structure("symmetric")
     partition = smc.Partition("column")
-    colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
-        A, structure=structure
-    )
-    B = smc.compress(A, basis_matrix, partition=partition)
-    A2 = smc.decompress(B, row_inds, col_inds)
-    assert not np.any(A.todense() != A2)
+    for A in As:
+        A = A + A.T
+        colors, basis_matrix, (row_inds, col_inds) = smc.compute_coloring(
+            A, structure=structure
+        )
+        B = smc.compress(A, basis_matrix, partition=partition)
+        A2 = smc.decompress(B, row_inds, col_inds)
+        assert not np.any(A.todense() != A2)
